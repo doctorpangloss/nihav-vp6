@@ -484,7 +484,7 @@ impl VP56Decoder {
             bc = BoolCoder::new(src)?;
         }
         let hdr = br.parse_header(&mut bc)?;
-        validate!((hdr.offset as usize) < aoffset); //XXX: take alpha 3 byte offset into account?
+        validate!((hdr.offset as usize) < aoffset);
 
         if hdr.mb_w != 0 && (usize::from(hdr.mb_w) != self.mb_w || usize::from(hdr.mb_h) != self.mb_h) {
             self.set_dimensions((hdr.mb_w as usize) * 16, (hdr.mb_h as usize) * 16);
@@ -520,11 +520,12 @@ impl VP56Decoder {
             }
         }
 
-        let psrc = &src[if self.has_alpha { 3 } else { 0 }..aoffset];
+        let color_end = if self.has_alpha { 3 + aoffset } else { aoffset };
+        let psrc = &src[if self.has_alpha { 3 } else { 0 }..color_end];
         self.decode_planes(br, &mut dframe, &mut bc, &hdr, psrc, false)?;
 
         if self.has_alpha {
-            let asrc = &src[aoffset + 3..];
+            let asrc = &src[3 + aoffset..];
             let mut bc = BoolCoder::new(asrc)?;
             let ahdr = br.parse_header(&mut bc)?;
             validate!(ahdr.mb_w == hdr.mb_w && ahdr.mb_h == hdr.mb_h);
